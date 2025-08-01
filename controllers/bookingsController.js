@@ -31,8 +31,8 @@ export const createBooking = async (req, res) => {
       signature_date
     } = req.body
 
-    // For now, we'll use a mock user_id - in production, get from JWT token
-    const user_id = req.user?.id || 'mock-user-id'
+    // Get user_id from query parameter
+    const user_id = req.query.user_id || req.body.user_id
 
     // Validate required fields
     if (!campaign_name || !campaign_ref || !client_name || !contact_name || !contact_email || !start_date || !end_date || !gross_amount || !net_amount) {
@@ -143,7 +143,16 @@ export const createBooking = async (req, res) => {
 // Get all bookings for user
 export const getBookings = async (req, res) => {
   try {
-    // For now, we'll get all bookings - in production, filter by user_id from JWT
+    // Get user_id from query parameter
+    const user_id = req.query.user_id
+    
+    if (!user_id) {
+      return res.status(400).json({
+        success: false,
+        message: 'user_id is required in query parameters'
+      })
+    }
+
     const { data: bookings, error } = await supabase
       .from('bookings')
       .select(`
@@ -156,6 +165,7 @@ export const getBookings = async (req, res) => {
         end_date,
         created_at
       `)
+      .eq('user_id', user_id)
       .order('created_at', { ascending: false })
 
     if (error) {

@@ -3,8 +3,15 @@ import { supabase } from '../config/supabaseConfig.js'
 // Get user settings
 export const getSettings = async (req, res) => {
   try {
-    // For now, we'll use a mock user_id - in production, get from JWT token
-    const user_id = req.user?.id || 'mock-user-id'
+    // Get user_id from query parameter
+    const user_id = req.query.user_id
+    
+    if (!user_id) {
+      return res.status(400).json({
+        success: false,
+        message: 'user_id is required in query parameters'
+      })
+    }
 
     const { data: settings, error } = await supabase
       .from('settings')
@@ -70,7 +77,14 @@ export const getSettings = async (req, res) => {
 export const updateSettings = async (req, res) => {
   try {
     const { email_recipients } = req.body
-    const user_id = req.user?.id || 'mock-user-id'
+    const user_id = req.query.user_id || req.body.user_id
+    
+    if (!user_id) {
+      return res.status(400).json({
+        success: false,
+        message: 'user_id is required in query parameters or request body'
+      })
+    }
 
     if (!email_recipients || !Array.isArray(email_recipients)) {
       return res.status(400).json({

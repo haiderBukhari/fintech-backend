@@ -120,8 +120,8 @@ npm start
 - `GET /api/auth/profile/:userId` - Get user profile
 
 ### Bookings
-- `POST /api/bookings` - Create new booking
-- `GET /api/bookings` - Get all bookings for user
+- `POST /api/bookings?user_id=uuid` - Create new booking
+- `GET /api/bookings?user_id=uuid` - Get all bookings for user
 - `GET /api/bookings/:id` - Get single booking details
 - `PUT /api/bookings/:id/status` - Update booking status
 - `POST /api/bookings/:id/generate-pdf` - Generate PDF
@@ -135,8 +135,8 @@ npm start
 - `GET /api/reports` - Get overall metrics
 
 ### Settings
-- `GET /api/settings` - Get user settings
-- `PUT /api/settings` - Update user settings
+- `GET /api/settings?user_id=uuid` - Get user settings
+- `PUT /api/settings?user_id=uuid` - Update user settings
 
 ### Health Check
 - `GET /health` - Server status
