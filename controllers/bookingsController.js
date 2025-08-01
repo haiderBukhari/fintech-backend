@@ -45,6 +45,14 @@ export const createBooking = async (req, res) => {
       })
     }
 
+    // Validate numeric fields
+    if (isNaN(parseFloat(gross_amount)) || isNaN(parseFloat(net_amount))) {
+      return res.status(400).json({
+        success: false,
+        message: 'gross_amount and net_amount must be valid numbers'
+      })
+    }
+
     // Check if campaign_reference already exists
     const { data: existingBooking } = await supabase
       .from('bookings')
@@ -79,10 +87,10 @@ export const createBooking = async (req, res) => {
         creative_delivery_date,
         media_type,
         placement_preferences,
-        gross_amount,
-        partner_discount: commission_amount,
-        additional_charges: vat_amount,
-        net_amount,
+        gross_amount: parseFloat(gross_amount),
+        partner_discount: parseFloat(commission_amount || 0),
+        additional_charges: parseFloat(vat_amount || 0),
+        net_amount: parseFloat(net_amount),
         creative_file_link,
         creative_specs: creative_specifications,
         special_instructions,
