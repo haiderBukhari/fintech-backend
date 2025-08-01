@@ -24,14 +24,6 @@ app.get('/health', (req, res) => {
   })
 })
 
-// 404 handler
-app.use('*', (req, res) => {
-  res.status(404).json({
-    success: false,
-    message: 'Route not found'
-  })
-})
-
 // Error handling middleware
 app.use((error, req, res, next) => {
   console.error('Error:', error)
@@ -39,6 +31,14 @@ app.use((error, req, res, next) => {
     success: false,
     message: 'Internal server error',
     error: process.env.NODE_ENV === 'development' ? error.message : 'Something went wrong'
+  })
+})
+
+// 404 handler - place after all other routes
+app.use((req, res) => {
+  res.status(404).json({
+    success: false,
+    message: 'Route not found'
   })
 })
 
