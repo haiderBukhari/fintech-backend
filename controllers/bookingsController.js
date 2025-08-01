@@ -6,11 +6,11 @@ export const createBooking = async (req, res) => {
     const {
       campaign_name,
       campaign_description,
-      campaign_ref,
+      campaign_reference,
       client_name,
-      contact_name,
-      contact_email,
-      contact_phone,
+      client_email,
+      client_phone,
+      client_company,
       address,
       industry_segment,
       tax_registration_no,
@@ -20,33 +20,36 @@ export const createBooking = async (req, res) => {
       media_type,
       placement_preferences,
       gross_amount,
-      partner_discount = 0,
-      additional_charges = 0,
+      commission_percentage = 0,
+      commission_amount = 0,
+      vat_percentage = 0,
+      vat_amount = 0,
       net_amount,
       creative_file_link,
-      creative_specs,
+      creative_specifications,
       special_instructions,
       signatory_name,
       signatory_title,
-      signature_date
+      signature_date,
+      authorization_required = false
     } = req.body
 
     // Get user_id from query parameter
     const user_id = req.query.user_id || req.body.user_id
 
     // Validate required fields
-    if (!campaign_name || !campaign_ref || !client_name || !contact_name || !contact_email || !start_date || !end_date || !gross_amount || !net_amount) {
+    if (!campaign_name || !campaign_reference || !client_name || !client_email || !start_date || !end_date || !gross_amount || !net_amount) {
       return res.status(400).json({
         success: false,
-        message: 'Missing required fields'
+        message: 'Missing required fields: campaign_name, campaign_reference, client_name, client_email, start_date, end_date, gross_amount, net_amount'
       })
     }
 
-    // Check if campaign_ref already exists
+    // Check if campaign_reference already exists
     const { data: existingBooking } = await supabase
       .from('bookings')
       .select('id')
-      .eq('campaign_ref', campaign_ref)
+      .eq('campaign_ref', campaign_reference)
       .single()
 
     if (existingBooking) {
@@ -63,11 +66,11 @@ export const createBooking = async (req, res) => {
         user_id,
         campaign_name,
         campaign_description,
-        campaign_ref,
+        campaign_ref: campaign_reference,
         client_name,
-        contact_name,
-        contact_email,
-        contact_phone,
+        contact_name: client_company || client_name,
+        contact_email: client_email,
+        contact_phone: client_phone,
         address,
         industry_segment,
         tax_registration_no,
@@ -77,11 +80,11 @@ export const createBooking = async (req, res) => {
         media_type,
         placement_preferences,
         gross_amount,
-        partner_discount,
-        additional_charges,
+        partner_discount: commission_amount,
+        additional_charges: vat_amount,
         net_amount,
         creative_file_link,
-        creative_specs,
+        creative_specs: creative_specifications,
         special_instructions,
         signatory_name,
         signatory_title,
