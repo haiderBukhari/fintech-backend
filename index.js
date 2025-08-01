@@ -2,6 +2,10 @@ import express from 'express'
 import cors from "cors"
 import dotenv from 'dotenv'
 import authRoutes from './routes/authRoutes.js'
+import bookingsRoutes from './routes/bookingsRoutes.js'
+import salesRepInboxRoutes from './routes/salesRepInboxRoutes.js'
+import reportsRoutes from './routes/reportsRoutes.js'
+import settingsRoutes from './routes/settingsRoutes.js'
 
 // Load environment variables
 dotenv.config()
@@ -14,6 +18,10 @@ app.use(cors('*'))
 
 // Routes
 app.use('/api/auth', authRoutes)
+app.use('/api/bookings', bookingsRoutes)
+app.use('/api/sales-rep-inbox', salesRepInboxRoutes)
+app.use('/api/reports', reportsRoutes)
+app.use('/api/settings', settingsRoutes)
 
 // Health check endpoint
 app.get('/health', (req, res) => {
