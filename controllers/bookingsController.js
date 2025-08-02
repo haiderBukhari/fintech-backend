@@ -56,19 +56,19 @@ export const createBooking = async (req, res) => {
       })
     }
 
-    // Check if campaign_reference already exists
-    const { data: existingBooking } = await supabase
-      .from('bookings')
-      .select('id')
-      .eq('campaign_ref', campaign_reference)
-      .single()
+    // // Check if campaign_reference already exists
+    // const { data: existingBooking } = await supabase
+    //   .from('bookings')
+    //   .select('id')
+    //   .eq('campaign_ref', campaign_reference)
+    //   .single()
 
-    if (existingBooking) {
-      return res.status(409).json({
-        success: false,
-        message: 'Campaign reference already exists'
-      })
-    }
+    // if (existingBooking) {
+    //   return res.status(409).json({
+    //     success: false,
+    //     message: 'Campaign reference already exists'
+    //   })
+    // }
 
     // Insert booking
     const { data: booking, error: bookingError } = await supabase
