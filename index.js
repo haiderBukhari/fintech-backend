@@ -23,7 +23,7 @@ app.use('/api/bookings', bookingsRoutes)
 app.use('/api/sales-rep-inbox', salesRepInboxRoutes)
 app.use('/api/reports', reportsRoutes)
 app.use('/api/settings', settingsRoutes)
-app.use('/api/ai', aiRoutes)
+app.use('/api/extract-booking-data', aiRoutes)
 
 // Health check endpoint
 app.get('/health', (req, res) => {
