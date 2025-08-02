@@ -3,7 +3,32 @@ import { supabase } from '../config/supabaseConfig.js'
 // Get all sales rep inbox items
 export const getSalesRepInbox = async (req, res) => {
   try {
-    const { data: inboxItems, error } = await supabase
+    // Get user_id from query parameter
+    const user_id = req.query.user_id
+    
+    if (!user_id) {
+      return res.status(400).json({
+        success: false,
+        message: 'user_id is required in query parameters'
+      })
+    }
+
+    // Check user role from users table
+    const { data: userData, error: userError } = await supabase
+      .from('users')
+      .select('role')
+      .eq('id', user_id)
+      .single()
+
+    if (userError || !userData) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      })
+    }
+
+    // Build query based on role
+    let query = supabase
       .from('sales_rep_inbox')
       .select(`
         id,
@@ -18,6 +43,14 @@ export const getSalesRepInbox = async (req, res) => {
         )
       `)
       .order('created_at', { ascending: false })
+
+    // If user role is 'user', filter by user_id. If 'sales', get all inbox items
+    if (userData.role === 'user') {
+      query = query.eq('bookings.user_id', user_id)
+    }
+    // If role is 'sales', no filter needed - get all inbox items
+
+    const { data: inboxItems, error } = await query
 
     if (error) {
       console.error('Get sales rep inbox error:', error)

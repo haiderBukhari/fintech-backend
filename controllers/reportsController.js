@@ -13,11 +13,32 @@ export const getReports = async (req, res) => {
       })
     }
 
-    // Get all bookings with status and revenue data for this user only
-    const { data: bookingsData, error: bookingsError } = await supabase
+    // Check user role from users table
+    const { data: userData, error: userError } = await supabase
+      .from('users')
+      .select('role')
+      .eq('id', user_id)
+      .single()
+
+    if (userError || !userData) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      })
+    }
+
+    // Build query based on role
+    let bookingsQuery = supabase
       .from('bookings')
       .select('net_amount, status, client_name, created_at')
-      .eq('user_id', user_id)
+
+    // If user role is 'user', filter by user_id. If 'sales', get all bookings
+    if (userData.role === 'user') {
+      bookingsQuery = bookingsQuery.eq('user_id', user_id)
+    }
+    // If role is 'sales', no filter needed - get all bookings
+
+    const { data: bookingsData, error: bookingsError } = await bookingsQuery
 
     if (bookingsError) {
       console.error('Bookings data error:', bookingsError)
@@ -52,13 +73,19 @@ export const getReports = async (req, res) => {
       }
     })
 
-    // Get monthly performance (last 6 months) for this user only
-    const { data: monthlyData, error: monthlyError } = await supabase
+    // Get monthly performance (last 6 months) based on role
+    let monthlyQuery = supabase
       .from('bookings')
       .select('net_amount, created_at')
-      .eq('user_id', user_id)
       .gte('created_at', new Date(Date.now() - 6 * 30 * 24 * 60 * 60 * 1000).toISOString())
       .order('created_at', { ascending: true })
+
+    // If user role is 'user', filter by user_id. If 'sales', get all bookings
+    if (userData.role === 'user') {
+      monthlyQuery = monthlyQuery.eq('user_id', user_id)
+    }
+
+    const { data: monthlyData, error: monthlyError } = await monthlyQuery
 
     if (monthlyError) {
       console.error('Monthly performance error:', monthlyError)
@@ -115,13 +142,19 @@ export const getReports = async (req, res) => {
       .sort((a, b) => b.revenue - a.revenue)
       .slice(0, 5)
 
-    // Get recent activity (confirmed bookings in last 7 days) for this user only
-    const { data: recentBookings, error: recentError } = await supabase
+    // Get recent activity (confirmed bookings in last 7 days) based on role
+    let recentQuery = supabase
       .from('bookings')
       .select('net_amount')
-      .eq('user_id', user_id)
       .eq('status', 'confirmed')
       .gte('created_at', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString())
+
+    // If user role is 'user', filter by user_id. If 'sales', get all bookings
+    if (userData.role === 'user') {
+      recentQuery = recentQuery.eq('user_id', user_id)
+    }
+
+    const { data: recentBookings, error: recentError } = await recentQuery
 
     if (recentError) {
       console.error('Recent activity error:', recentError)

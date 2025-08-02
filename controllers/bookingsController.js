@@ -166,7 +166,22 @@ export const getBookings = async (req, res) => {
       })
     }
 
-    const { data: bookings, error } = await supabase
+    // Check user role from users table
+    const { data: userData, error: userError } = await supabase
+      .from('users')
+      .select('role')
+      .eq('id', user_id)
+      .single()
+
+    if (userError || !userData) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      })
+    }
+
+    // Build query based on role
+    let query = supabase
       .from('bookings')
       .select(`
         id,
@@ -178,8 +193,15 @@ export const getBookings = async (req, res) => {
         end_date,
         created_at
       `)
-      .eq('user_id', user_id)
       .order('created_at', { ascending: false })
+
+    // If user role is 'user', filter by user_id. If 'sales', get all bookings
+    if (userData.role === 'user') {
+      query = query.eq('user_id', user_id)
+    }
+    // If role is 'sales', no filter needed - get all bookings
+
+    const { data: bookings, error } = await query
 
     if (error) {
       console.error('Get bookings error:', error)
