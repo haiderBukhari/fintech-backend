@@ -3,10 +3,21 @@ import { supabase } from '../config/supabaseConfig.js'
 // Get overall metrics and reports
 export const getReports = async (req, res) => {
   try {
-    // Get all bookings with status and revenue data
+    // Get user_id from query parameter
+    const user_id = req.query.user_id
+    
+    if (!user_id) {
+      return res.status(400).json({
+        success: false,
+        message: 'user_id is required in query parameters'
+      })
+    }
+
+    // Get all bookings with status and revenue data for this user only
     const { data: bookingsData, error: bookingsError } = await supabase
       .from('bookings')
       .select('net_amount, status, client_name, created_at')
+      .eq('user_id', user_id)
 
     if (bookingsError) {
       console.error('Bookings data error:', bookingsError)
@@ -41,10 +52,11 @@ export const getReports = async (req, res) => {
       }
     })
 
-    // Get monthly performance (last 6 months)
+    // Get monthly performance (last 6 months) for this user only
     const { data: monthlyData, error: monthlyError } = await supabase
       .from('bookings')
       .select('net_amount, created_at')
+      .eq('user_id', user_id)
       .gte('created_at', new Date(Date.now() - 6 * 30 * 24 * 60 * 60 * 1000).toISOString())
       .order('created_at', { ascending: true })
 
@@ -103,10 +115,11 @@ export const getReports = async (req, res) => {
       .sort((a, b) => b.revenue - a.revenue)
       .slice(0, 5)
 
-    // Get recent activity (confirmed bookings in last 7 days)
+    // Get recent activity (confirmed bookings in last 7 days) for this user only
     const { data: recentBookings, error: recentError } = await supabase
       .from('bookings')
       .select('net_amount')
+      .eq('user_id', user_id)
       .eq('status', 'confirmed')
       .gte('created_at', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString())
 

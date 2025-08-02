@@ -63,7 +63,8 @@ export const signup = async (req, res) => {
         full_name: newUser.full_name,
         email_address: newUser.email_address,
         company_name: newUser.company_name,
-        created_at: newUser.created_at
+        created_at: newUser.created_at,
+        role: newUser.role
       }
     })
 
@@ -128,7 +129,8 @@ export const login = async (req, res) => {
         full_name: user.full_name,
         email_address: user.email_address,
         company_name: user.company_name,
-        created_at: user.created_at
+        created_at: user.created_at,
+        role: user.role
       }
     })
 
