@@ -67,6 +67,31 @@ export const updateSalesRepStatus = async (req, res) => {
       })
     }
 
+    // Validate rep_status values
+    const validStatuses = ['pending', 'reviewed', 'confirmed', 'rejected']
+    if (!validStatuses.includes(rep_status)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid rep_status. Must be one of: pending, reviewed, confirmed, rejected',
+        received_status: rep_status
+      })
+    }
+
+    // Check if sales rep inbox item exists and get booking_id
+    const { data: existingItem, error: checkError } = await supabase
+      .from('sales_rep_inbox')
+      .select('id, booking_id')
+      .eq('id', id)
+      .single()
+
+    if (checkError || !existingItem) {
+      return res.status(404).json({
+        success: false,
+        message: 'Sales rep inbox item not found',
+        item_id: id
+      })
+    }
+
     // Update sales rep inbox status
     const { error: updateError } = await supabase
       .from('sales_rep_inbox')
@@ -85,9 +110,51 @@ export const updateSalesRepStatus = async (req, res) => {
       })
     }
 
+    // Update booking status based on rep_status
+    let bookingStatus = 'submitted'
+    let bookingProgress = 0
+
+    if (rep_status === 'rejected') {
+      bookingStatus = 'rejected'
+      bookingProgress = 0
+    } else if (rep_status === 'confirmed') {
+      bookingStatus = 'confirmed'
+      bookingProgress = 100
+    }
+
+    // Update booking status and progress
+    const { error: bookingUpdateError } = await supabase
+      .from('bookings')
+      .update({ 
+        status: bookingStatus,
+        progress: bookingProgress,
+        updated_at: new Date().toISOString() 
+      })
+      .eq('id', existingItem.booking_id)
+
+    if (bookingUpdateError) {
+      console.error('Update booking status error:', bookingUpdateError)
+      return res.status(500).json({
+        success: false,
+        message: 'Error updating booking status',
+        error: bookingUpdateError.message
+      })
+    }
+
+    // Add to booking status history
+    await supabase
+      .from('booking_status_history')
+      .insert([{
+        booking_id: existingItem.booking_id,
+        status: bookingStatus,
+        notes: `Sales rep ${rep_status} the booking`
+      }])
+
     res.status(200).json({
       success: true,
-      message: 'Sales rep status updated successfully'
+      message: 'Sales rep status updated successfully',
+      booking_status: bookingStatus,
+      booking_progress: bookingProgress
     })
 
   } catch (error) {
