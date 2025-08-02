@@ -100,7 +100,7 @@ export const createBooking = async (req, res) => {
         signature_date,
         status: 'submitted',
         progress: 50,
-        pdf_url: pdf_url,
+        pdf_url: pdf_url || null
       }])
       .select()
       .single()
