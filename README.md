@@ -105,6 +105,9 @@ NODE_ENV=development
 # Email Configuration (Gmail)
 GMAIL_USER=your_gmail@gmail.com
 GMAIL_APP_PASSWORD=your_gmail_app_password
+
+# AI Configuration (Google GenAI)
+GOOGLE_GENAI_API_KEY=your_google_genai_api_key
 ```
 
 ### 3. Run the Server
@@ -142,6 +145,10 @@ npm start
 ### Settings
 - `GET /api/settings?user_id=uuid` - Get user settings
 - `PUT /api/settings?user_id=uuid` - Update user settings
+
+### AI Text Extraction
+- `POST /api/ai/extract-booking-data` - Extract booking data from text using Gemini AI
+- `POST /api/ai/validate-extracted-data` - Validate extracted data against business rules
 
 ### Health Check
 - `GET /health` - Server status
@@ -191,6 +198,103 @@ npm start
 - `404` - Booking not found
 - `400` - PDF URL not found (generate PDF first)
 - `500` - Email sending failed
+
+## AI Text Extraction API Documentation
+
+### Extract Booking Data from Text
+**Endpoint:** `POST /api/ai/extract-booking-data`
+
+**Description:** Use Google's Gemini AI to extract structured booking data from text input.
+
+**Request Body:**
+```json
+{
+  "text": "Client: Example Corp, Contact: Jane Doe, Email: jane@example.com, Campaign: Christmas Promo 2025, Start Date: December 1, 2025, End Date: December 31, 2025, Gross Amount: $50,000, Net Amount: $47,000..."
+}
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "message": "Booking data extracted successfully",
+  "data": {
+    "clientName": "Example Corp",
+    "contactName": "Jane Doe",
+    "contactEmail": "jane@example.com",
+    "contactPhone": "+65 1234 5678",
+    "address": "123 Orchard Road, Singapore",
+    "industrySegment": "Retail",
+    "taxRegistrationNo": "12345678X",
+    "campaignName": "Christmas Promo 2025",
+    "campaignRef": "CP-2025-001",
+    "startDate": "2025-12-01",
+    "endDate": "2025-12-31",
+    "creativeDeliveryDate": "2025-11-15",
+    "mediaType": "Newspaper Ad",
+    "placementPreferences": "Front page",
+    "grossAmount": 50000,
+    "partnerDiscount": 10,
+    "additionalCharges": 2000,
+    "netAmount": 47000,
+    "creativeFileLink": "https://example.com/ad.pdf",
+    "creativeSpecs": "Full-page colour, 300 DPI",
+    "specialInstructions": "Run on weekends only",
+    "signatoryName": "John Smith",
+    "signatoryTitle": "Marketing Director",
+    "signatureDate": "2025-10-01"
+  },
+  "originalText": "Client: Example Corp..."
+}
+```
+
+**Error Responses:**
+- `400` - Text input is required
+- `400` - Incomplete data extracted (missing fields)
+- `400` - Invalid date formats detected
+- `400` - Invalid numeric values detected
+- `500` - Failed to parse AI response
+- `500` - Failed to extract booking data
+
+### Validate Extracted Data
+**Endpoint:** `POST /api/ai/validate-extracted-data`
+
+**Description:** Validate extracted booking data against business rules.
+
+**Request Body:**
+```json
+{
+  "extractedData": {
+    "clientName": "Example Corp",
+    "contactEmail": "jane@example.com",
+    "campaignName": "Christmas Promo 2025",
+    "startDate": "2025-12-01",
+    "endDate": "2025-12-31",
+    "grossAmount": 50000
+  }
+}
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "message": "Data validation passed",
+  "data": {
+    "clientName": "Example Corp",
+    "contactEmail": "jane@example.com",
+    "campaignName": "Christmas Promo 2025",
+    "startDate": "2025-12-01",
+    "endDate": "2025-12-31",
+    "grossAmount": 50000
+  }
+}
+```
+
+**Error Responses:**
+- `400` - Extracted data is required
+- `400` - Data validation failed (with specific error messages)
+- `500` - Failed to validate data
 
 ## Features
 

@@ -6,6 +6,7 @@ import bookingsRoutes from './routes/bookingsRoutes.js'
 import salesRepInboxRoutes from './routes/salesRepInboxRoutes.js'
 import reportsRoutes from './routes/reportsRoutes.js'
 import settingsRoutes from './routes/settingsRoutes.js'
+import aiRoutes from './routes/aiRoutes.js'
 
 // Load environment variables
 dotenv.config()
@@ -22,6 +23,7 @@ app.use('/api/bookings', bookingsRoutes)
 app.use('/api/sales-rep-inbox', salesRepInboxRoutes)
 app.use('/api/reports', reportsRoutes)
 app.use('/api/settings', settingsRoutes)
+app.use('/api/ai', aiRoutes)
 
 // Health check endpoint
 app.get('/health', (req, res) => {
