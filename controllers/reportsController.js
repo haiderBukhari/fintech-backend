@@ -3,53 +3,42 @@ import { supabase } from '../config/supabaseConfig.js'
 // Get overall metrics and reports
 export const getReports = async (req, res) => {
   try {
-    // Get total revenue
-    const { data: revenueData, error: revenueError } = await supabase
+    // Get all bookings with status and revenue data
+    const { data: bookingsData, error: bookingsError } = await supabase
       .from('bookings')
-      .select('net_amount')
-
-    if (revenueError) {
-      console.error('Revenue calculation error:', revenueError)
-    }
-
-    const total_revenue = revenueData?.reduce((sum, booking) => sum + parseFloat(booking.net_amount || 0), 0) || 0
-
-    // Get total bookings count
-    const { count: total_bookings, error: bookingsError } = await supabase
-      .from('bookings')
-      .select('*', { count: 'exact', head: true })
+      .select('net_amount, status, client_name, created_at')
 
     if (bookingsError) {
-      console.error('Bookings count error:', bookingsError)
+      console.error('Bookings data error:', bookingsError)
     }
+
+    // Calculate total revenue
+    const total_revenue = bookingsData?.reduce((sum, booking) => sum + parseFloat(booking.net_amount || 0), 0) || 0
+
+    // Get total bookings count
+    const total_bookings = bookingsData?.length || 0
 
     // Get unique clients count
-    const { data: clientsData, error: clientsError } = await supabase
-      .from('bookings')
-      .select('client_name')
-
-    if (clientsError) {
-      console.error('Clients count error:', clientsError)
-    }
-
-    const uniqueClients = new Set(clientsData?.map(booking => booking.client_name) || [])
+    const uniqueClients = new Set(bookingsData?.map(booking => booking.client_name) || [])
     const active_clients = uniqueClients.size
 
-    // Calculate average booking value
-    const avg_booking_value = total_bookings > 0 ? Math.round(total_revenue / total_bookings) : 0
+    // Calculate average booking value based on confirmed bookings only
+    const confirmedBookings = bookingsData?.filter(booking => booking.status === 'confirmed') || []
+    const confirmedRevenue = confirmedBookings.reduce((sum, booking) => sum + parseFloat(booking.net_amount || 0), 0)
+    const avg_booking_value = confirmedBookings.length > 0 ? Math.round(confirmedRevenue / confirmedBookings.length) : 0
 
-    // Get status distribution
-    const { data: statusData, error: statusError } = await supabase
-      .from('bookings')
-      .select('status')
-
-    if (statusError) {
-      console.error('Status distribution error:', statusError)
+    // Get status distribution with all statuses pre-filled
+    const statusDistribution = {
+      submitted: 0,
+      in_progress: 0,
+      confirmed: 0,
+      rejected: 0
     }
-
-    const statusDistribution = {}
-    statusData?.forEach(booking => {
-      statusDistribution[booking.status] = (statusDistribution[booking.status] || 0) + 1
+    
+    bookingsData?.forEach(booking => {
+      if (statusDistribution.hasOwnProperty(booking.status)) {
+        statusDistribution[booking.status] = (statusDistribution[booking.status] || 0) + 1
+      }
     })
 
     // Get monthly performance (last 6 months)
@@ -93,16 +82,8 @@ export const getReports = async (req, res) => {
     })
 
     // Get top clients
-    const { data: topClientsData, error: topClientsError } = await supabase
-      .from('bookings')
-      .select('client_name, net_amount')
-
-    if (topClientsError) {
-      console.error('Top clients error:', topClientsError)
-    }
-
     const clientRevenue = {}
-    topClientsData?.forEach(booking => {
+    bookingsData?.forEach(booking => {
       if (!clientRevenue[booking.client_name]) {
         clientRevenue[booking.client_name] = {
           revenue: 0,
@@ -122,6 +103,20 @@ export const getReports = async (req, res) => {
       .sort((a, b) => b.revenue - a.revenue)
       .slice(0, 5)
 
+    // Get recent activity (confirmed bookings in last 7 days)
+    const { data: recentBookings, error: recentError } = await supabase
+      .from('bookings')
+      .select('net_amount')
+      .eq('status', 'confirmed')
+      .gte('created_at', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString())
+
+    if (recentError) {
+      console.error('Recent activity error:', recentError)
+    }
+
+    const recentConfirmedCount = recentBookings?.length || 0
+    const recentConfirmedValue = recentBookings?.reduce((sum, booking) => sum + parseFloat(booking.net_amount || 0), 0) || 0
+
     res.status(200).json({
       success: true,
       data: {
@@ -131,7 +126,11 @@ export const getReports = async (req, res) => {
         avg_booking_value,
         status_distribution: statusDistribution,
         monthly_performance: monthlyPerformance,
-        top_clients
+        top_clients,
+        recent_activity: {
+          confirmed_bookings: recentConfirmedCount,
+          total_value: Math.round(recentConfirmedValue)
+        }
       }
     })
 
