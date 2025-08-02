@@ -1,70 +1,122 @@
-import { GoogleGenAI } from "@google/genai";
+import { GoogleGenAI, createPartFromUri } from "@google/genai";
 
 // Initialize Google GenAI
 const ai = new GoogleGenAI({
   apiKey: process.env.GOOGLE_GENAI_API_KEY
 });
 
-// Extract booking data from text using Gemini AI
+// Extract booking data from PDF using Gemini AI
 export const extractBookingData = async (req, res) => {
   try {
-    const { text } = req.body;
+    const { pdfUrl } = req.body;
 
-    if (!text) {
+    if (!pdfUrl) {
       return res.status(400).json({
         success: false,
-        message: "Text input is required"
+        message: "PDF URL is required"
       });
     }
 
-    // Create a detailed prompt for Gemini to extract structured data
-    const prompt = `
-    Extract booking information from the following text and return it as a valid JSON object with the exact structure shown below. 
-    If a field is not found in the text, use null for that field.
-    
-    Required JSON structure:
-    {
-      "clientName": "string",
-      "contactName": "string", 
-      "contactEmail": "string",
-      "contactPhone": "string",
-      "address": "string",
-      "industrySegment": "string",
-      "taxRegistrationNo": "string",
-      "campaignName": "string",
-      "campaignRef": "string",
-      "startDate": "YYYY-MM-DD",
-      "endDate": "YYYY-MM-DD", 
-      "creativeDeliveryDate": "YYYY-MM-DD",
-      "mediaType": "string",
-      "placementPreferences": "string",
-      "grossAmount": number,
-      "partnerDiscount": number,
-      "additionalCharges": number,
-      "netAmount": number,
-      "creativeFileLink": "string",
-      "creativeSpecs": "string",
-      "specialInstructions": "string",
-      "signatoryName": "string",
-      "signatoryTitle": "string",
-      "signatureDate": "YYYY-MM-DD"
+    // Validate PDF URL format
+    if (!pdfUrl.match(/^https?:\/\/.+/)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid PDF URL format"
+      });
     }
 
-    Text to analyze:
-    ${text}
-
-    Return only the JSON object, no additional text or explanations.
-    `;
-
-    // Generate content using Gemini AI
-    const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
-      contents: prompt,
-      config: {
-        temperature: 0.1, // Low temperature for more consistent output
-        systemInstruction: "You are a data extraction specialist. Extract booking information from text and return it as a valid JSON object with the exact structure specified. Ensure all dates are in YYYY-MM-DD format and numbers are numeric values."
+    try {
+      // Fetch PDF from URL
+      const pdfResponse = await fetch(pdfUrl);
+      if (!pdfResponse.ok) {
+        return res.status(400).json({
+          success: false,
+          message: "Failed to fetch PDF from URL"
+        });
       }
-    });
+
+      const pdfBuffer = await pdfResponse.arrayBuffer();
+      const fileBlob = new Blob([pdfBuffer], { type: 'application/pdf' });
+
+      // Upload PDF to Gemini File API
+      const file = await ai.files.upload({
+        file: fileBlob,
+        config: {
+          displayName: 'booking-document.pdf',
+        },
+      });
+
+      // Wait for the file to be processed
+      let getFile = await ai.files.get({ name: file.name });
+      while (getFile.state === 'PROCESSING') {
+        getFile = await ai.files.get({ name: file.name });
+        console.log(`Current file status: ${getFile.state}`);
+        
+        // Wait 2 seconds before checking again
+        await new Promise((resolve) => {
+          setTimeout(resolve, 1000);
+        });
+      }
+
+      if (getFile.state === 'FAILED') {
+        return res.status(500).json({
+          success: false,
+          message: "PDF processing failed"
+        });
+      }
+
+      // Create a detailed prompt for Gemini to extract structured data
+      const prompt = `
+      Extract booking information from this PDF document and return it as a valid JSON object with the exact structure shown below. 
+      If a field is not found in the document, use null for that field.
+      
+      Required JSON structure:
+      {
+        "clientName": "string",
+        "contactName": "string", 
+        "contactEmail": "string",
+        "contactPhone": "string",
+        "address": "string",
+        "industrySegment": "string",
+        "taxRegistrationNo": "string",
+        "campaignName": "string",
+        "campaignRef": "string",
+        "startDate": "YYYY-MM-DD",
+        "endDate": "YYYY-MM-DD", 
+        "creativeDeliveryDate": "YYYY-MM-DD",
+        "mediaType": "string",
+        "placementPreferences": "string",
+        "grossAmount": number,
+        "partnerDiscount": number,
+        "additionalCharges": number,
+        "netAmount": number,
+        "creativeFileLink": "string",
+        "creativeSpecs": "string",
+        "specialInstructions": "string",
+        "signatoryName": "string",
+        "signatoryTitle": "string",
+        "signatureDate": "YYYY-MM-DD"
+      }
+
+      Return only the JSON object, no additional text or explanations.
+      `;
+
+      // Prepare content with PDF file
+      const content = [prompt];
+      if (file.uri && file.mimeType) {
+        const fileContent = createPartFromUri(file.uri, file.mimeType);
+        content.push(fileContent);
+      }
+
+      // Generate content using Gemini AI
+      const response = await ai.models.generateContent({
+        model: "gemini-2.5-flash",
+        contents: content,
+        config: {
+          temperature: 0.1, // Low temperature for more consistent output
+          systemInstruction: "You are a data extraction specialist. Extract booking information from PDF documents and return it as a valid JSON object with the exact structure specified. Ensure all dates are in YYYY-MM-DD format and numbers are numeric values."
+        }
+      });
 
     // Parse the response text as JSON
     let extractedData;
@@ -138,8 +190,17 @@ export const extractBookingData = async (req, res) => {
       success: true,
       message: "Booking data extracted successfully",
       data: extractedData,
-      originalText: text
+      pdfUrl: pdfUrl
     });
+
+    } catch (fetchError) {
+      console.error('PDF fetch error:', fetchError);
+      return res.status(500).json({
+        success: false,
+        message: "Failed to fetch PDF from URL",
+        error: fetchError.message
+      });
+    }
 
   } catch (error) {
     console.error('AI extraction error:', error);
@@ -151,84 +212,4 @@ export const extractBookingData = async (req, res) => {
   }
 };
 
-// Validate extracted data against business rules
-export const validateExtractedData = async (req, res) => {
-  try {
-    const { extractedData } = req.body;
-
-    if (!extractedData) {
-      return res.status(400).json({
-        success: false,
-        message: "Extracted data is required"
-      });
-    }
-
-    const validationErrors = [];
-
-    // Validate required fields
-    const requiredFields = ['clientName', 'contactEmail', 'campaignName', 'startDate', 'endDate', 'grossAmount'];
-    requiredFields.forEach(field => {
-      if (!extractedData[field]) {
-        validationErrors.push(`${field} is required`);
-      }
-    });
-
-    // Validate email format
-    if (extractedData.contactEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(extractedData.contactEmail)) {
-      validationErrors.push('Invalid email format');
-    }
-
-    // Validate phone format (basic validation)
-    if (extractedData.contactPhone && !/^[\+]?[0-9\s\-\(\)]+$/.test(extractedData.contactPhone)) {
-      validationErrors.push('Invalid phone number format');
-    }
-
-    // Validate date logic
-    if (extractedData.startDate && extractedData.endDate) {
-      const startDate = new Date(extractedData.startDate);
-      const endDate = new Date(extractedData.endDate);
-      
-      if (startDate >= endDate) {
-        validationErrors.push('End date must be after start date');
-      }
-    }
-
-    // Validate financial calculations
-    if (extractedData.grossAmount && extractedData.partnerDiscount && extractedData.additionalCharges && extractedData.netAmount) {
-      const calculatedNet = extractedData.grossAmount - (extractedData.grossAmount * extractedData.partnerDiscount / 100) + extractedData.additionalCharges;
-      const difference = Math.abs(calculatedNet - extractedData.netAmount);
-      
-      if (difference > 1) { // Allow for small rounding differences
-        validationErrors.push('Net amount calculation mismatch');
-      }
-    }
-
-    // Validate campaign reference format
-    if (extractedData.campaignRef && !/^[A-Z]{2}-\d{4}-\d{3}$/.test(extractedData.campaignRef)) {
-      validationErrors.push('Campaign reference should be in format: XX-YYYY-ZZZ');
-    }
-
-    if (validationErrors.length > 0) {
-      return res.status(400).json({
-        success: false,
-        message: "Data validation failed",
-        errors: validationErrors,
-        data: extractedData
-      });
-    }
-
-    res.status(200).json({
-      success: true,
-      message: "Data validation passed",
-      data: extractedData
-    });
-
-  } catch (error) {
-    console.error('Data validation error:', error);
-    res.status(500).json({
-      success: false,
-      message: "Failed to validate data",
-      error: error.message
-    });
-  }
-}; 
+ 

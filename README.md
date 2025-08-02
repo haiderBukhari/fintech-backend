@@ -146,9 +146,8 @@ npm start
 - `GET /api/settings?user_id=uuid` - Get user settings
 - `PUT /api/settings?user_id=uuid` - Update user settings
 
-### AI Text Extraction
-- `POST /api/ai/extract-booking-data` - Extract booking data from text using Gemini AI
-- `POST /api/ai/validate-extracted-data` - Validate extracted data against business rules
+### AI PDF Extraction
+- `POST /api/ai/extract-booking-data` - Extract booking data from PDF using Gemini AI
 
 ### Health Check
 - `GET /health` - Server status
@@ -199,17 +198,17 @@ npm start
 - `400` - PDF URL not found (generate PDF first)
 - `500` - Email sending failed
 
-## AI Text Extraction API Documentation
+## AI PDF Extraction API Documentation
 
-### Extract Booking Data from Text
+### Extract Booking Data from PDF
 **Endpoint:** `POST /api/ai/extract-booking-data`
 
-**Description:** Use Google's Gemini AI to extract structured booking data from text input.
+**Description:** Use Google's Gemini AI to extract structured booking data from PDF documents.
 
 **Request Body:**
 ```json
 {
-  "text": "Client: Example Corp, Contact: Jane Doe, Email: jane@example.com, Campaign: Christmas Promo 2025, Start Date: December 1, 2025, End Date: December 31, 2025, Gross Amount: $50,000, Net Amount: $47,000..."
+  "pdfUrl": "https://example.com/booking-document.pdf"
 }
 ```
 
@@ -244,57 +243,20 @@ npm start
     "signatoryTitle": "Marketing Director",
     "signatureDate": "2025-10-01"
   },
-  "originalText": "Client: Example Corp..."
+  "pdfUrl": "https://example.com/booking-document.pdf"
 }
 ```
 
 **Error Responses:**
-- `400` - Text input is required
+- `400` - PDF URL is required
+- `400` - Invalid PDF URL format
+- `400` - Failed to fetch PDF from URL
 - `400` - Incomplete data extracted (missing fields)
 - `400` - Invalid date formats detected
 - `400` - Invalid numeric values detected
+- `500` - PDF processing failed
 - `500` - Failed to parse AI response
 - `500` - Failed to extract booking data
-
-### Validate Extracted Data
-**Endpoint:** `POST /api/ai/validate-extracted-data`
-
-**Description:** Validate extracted booking data against business rules.
-
-**Request Body:**
-```json
-{
-  "extractedData": {
-    "clientName": "Example Corp",
-    "contactEmail": "jane@example.com",
-    "campaignName": "Christmas Promo 2025",
-    "startDate": "2025-12-01",
-    "endDate": "2025-12-31",
-    "grossAmount": 50000
-  }
-}
-```
-
-**Response:**
-```json
-{
-  "success": true,
-  "message": "Data validation passed",
-  "data": {
-    "clientName": "Example Corp",
-    "contactEmail": "jane@example.com",
-    "campaignName": "Christmas Promo 2025",
-    "startDate": "2025-12-01",
-    "endDate": "2025-12-31",
-    "grossAmount": 50000
-  }
-}
-```
-
-**Error Responses:**
-- `400` - Extracted data is required
-- `400` - Data validation failed (with specific error messages)
-- `500` - Failed to validate data
 
 ## Features
 
