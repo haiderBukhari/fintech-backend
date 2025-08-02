@@ -21,76 +21,164 @@ export const sendBookingEmail = async (bookingData, emailRecipients, pdfUrl) => 
 
     // Format booking details for email
     const bookingDetails = `
-      <h2>New Booking Created</h2>
-      <table style="border-collapse: collapse; width: 100%; margin-bottom: 20px;">
-        <tr style="background-color: #f8f9fa;">
-          <td style="padding: 10px; border: 1px solid #dee2e6;"><strong>Campaign Name:</strong></td>
-          <td style="padding: 10px; border: 1px solid #dee2e6;">${bookingData.campaign_name}</td>
-        </tr>
-        <tr>
-          <td style="padding: 10px; border: 1px solid #dee2e6;"><strong>Campaign Reference:</strong></td>
-          <td style="padding: 10px; border: 1px solid #dee2e6;">${bookingData.campaign_ref}</td>
-        </tr>
-        <tr style="background-color: #f8f9fa;">
-          <td style="padding: 10px; border: 1px solid #dee2e6;"><strong>Client Name:</strong></td>
-          <td style="padding: 10px; border: 1px solid #dee2e6;">${bookingData.client_name}</td>
-        </tr>
-        <tr>
-          <td style="padding: 10px; border: 1px solid #dee2e6;"><strong>Contact Email:</strong></td>
-          <td style="padding: 10px; border: 1px solid #dee2e6;">${bookingData.contact_email}</td>
-        </tr>
-        <tr style="background-color: #f8f9fa;">
-          <td style="padding: 10px; border: 1px solid #dee2e6;"><strong>Contact Phone:</strong></td>
-          <td style="padding: 10px; border: 1px solid #dee2e6;">${bookingData.contact_phone || 'N/A'}</td>
-        </tr>
-        <tr>
-          <td style="padding: 10px; border: 1px solid #dee2e6;"><strong>Start Date:</strong></td>
-          <td style="padding: 10px; border: 1px solid #dee2e6;">${new Date(bookingData.start_date).toLocaleDateString()}</td>
-        </tr>
-        <tr style="background-color: #f8f9fa;">
-          <td style="padding: 10px; border: 1px solid #dee2e6;"><strong>End Date:</strong></td>
-          <td style="padding: 10px; border: 1px solid #dee2e6;">${new Date(bookingData.end_date).toLocaleDateString()}</td>
-        </tr>
-        <tr>
-          <td style="padding: 10px; border: 1px solid #dee2e6;"><strong>Media Type:</strong></td>
-          <td style="padding: 10px; border: 1px solid #dee2e6;">${bookingData.media_type}</td>
-        </tr>
-        <tr style="background-color: #f8f9fa;">
-          <td style="padding: 10px; border: 1px solid #dee2e6;"><strong>Gross Amount:</strong></td>
-          <td style="padding: 10px; border: 1px solid #dee2e6;">$${bookingData.gross_amount?.toLocaleString()}</td>
-        </tr>
-        <tr>
-          <td style="padding: 10px; border: 1px solid #dee2e6;"><strong>Net Amount:</strong></td>
-          <td style="padding: 10px; border: 1px solid #dee2e6;">$${bookingData.net_amount?.toLocaleString()}</td>
-        </tr>
-        <tr style="background-color: #f8f9fa;">
-          <td style="padding: 10px; border: 1px solid #dee2e6;"><strong>Status:</strong></td>
-          <td style="padding: 10px; border: 1px solid #dee2e6;">
-            <span style="background-color: #007bff; color: white; padding: 4px 8px; border-radius: 4px; font-size: 12px;">
-              ${bookingData.status}
-            </span>
-          </td>
-        </tr>
-      </table>
-
-      <div style="margin-top: 20px; padding: 15px; background-color: #e9ecef; border-radius: 5px;">
-        <h3 style="margin-top: 0;">Campaign Description</h3>
-        <p style="margin-bottom: 0;">${bookingData.campaign_description || 'No description provided'}</p>
+      <h2 style="color: #2c3e50; border-bottom: 3px solid #3498db; padding-bottom: 10px;">New Booking Created</h2>
+      
+      <!-- Campaign Information -->
+      <div style="margin: 20px 0; padding: 20px; background-color: #ecf0f1; border-radius: 8px;">
+        <h3 style="color: #2c3e50; margin-top: 0;">Campaign Information</h3>
+        <table style="width: 100%; border-collapse: collapse;">
+          <tr>
+            <td style="padding: 8px; font-weight: bold; width: 150px;">Name</td>
+            <td style="padding: 8px;">${bookingData.campaign_name}</td>
+          </tr>
+          <tr>
+            <td style="padding: 8px; font-weight: bold;">Description</td>
+            <td style="padding: 8px;">${bookingData.campaign_description || 'No description provided'}</td>
+          </tr>
+        </table>
       </div>
 
-      ${bookingData.creative_specs ? `
-        <div style="margin-top: 20px; padding: 15px; background-color: #fff3cd; border-radius: 5px;">
-          <h3 style="margin-top: 0;">Creative Specifications</h3>
-          <p style="margin-bottom: 0;">${bookingData.creative_specs}</p>
-        </div>
-      ` : ''}
+      <!-- Client Details -->
+      <div style="margin: 20px 0; padding: 20px; background-color: #e8f5e8; border-radius: 8px;">
+        <h3 style="color: #2c3e50; margin-top: 0;">Client Details</h3>
+        <table style="width: 100%; border-collapse: collapse;">
+          <tr>
+            <td style="padding: 8px; font-weight: bold; width: 150px;">Client</td>
+            <td style="padding: 8px;">${bookingData.client_name}</td>
+          </tr>
+          <tr>
+            <td style="padding: 8px; font-weight: bold;">Contact</td>
+            <td style="padding: 8px;">${bookingData.contact_name}</td>
+          </tr>
+          <tr>
+            <td style="padding: 8px; font-weight: bold;">Email</td>
+            <td style="padding: 8px;">${bookingData.contact_email}</td>
+          </tr>
+          <tr>
+            <td style="padding: 8px; font-weight: bold;">Phone</td>
+            <td style="padding: 8px;">${bookingData.contact_phone || 'N/A'}</td>
+          </tr>
+          <tr>
+            <td style="padding: 8px; font-weight: bold;">Address</td>
+            <td style="padding: 8px;">${bookingData.address || 'N/A'}</td>
+          </tr>
+          <tr>
+            <td style="padding: 8px; font-weight: bold;">Industry Segment</td>
+            <td style="padding: 8px;">${bookingData.industry_segment || 'N/A'}</td>
+          </tr>
+          <tr>
+            <td style="padding: 8px; font-weight: bold;">Tax Registration No</td>
+            <td style="padding: 8px;">${bookingData.tax_registration_no || 'N/A'}</td>
+          </tr>
+        </table>
+      </div>
 
-      ${bookingData.special_instructions ? `
-        <div style="margin-top: 20px; padding: 15px; background-color: #d1ecf1; border-radius: 5px;">
-          <h3 style="margin-top: 0;">Special Instructions</h3>
-          <p style="margin-bottom: 0;">${bookingData.special_instructions}</p>
-        </div>
-      ` : ''}
+      <!-- Campaign Details -->
+      <div style="margin: 20px 0; padding: 20px; background-color: #fff3cd; border-radius: 8px;">
+        <h3 style="color: #2c3e50; margin-top: 0;">Campaign Details</h3>
+        <table style="width: 100%; border-collapse: collapse;">
+          <tr>
+            <td style="padding: 8px; font-weight: bold; width: 150px;">Campaign</td>
+            <td style="padding: 8px;">${bookingData.campaign_name}</td>
+          </tr>
+          <tr>
+            <td style="padding: 8px; font-weight: bold;">Reference</td>
+            <td style="padding: 8px;">${bookingData.campaign_ref}</td>
+          </tr>
+          <tr>
+            <td style="padding: 8px; font-weight: bold;">Start Date</td>
+            <td style="padding: 8px;">${new Date(bookingData.start_date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</td>
+          </tr>
+          <tr>
+            <td style="padding: 8px; font-weight: bold;">End Date</td>
+            <td style="padding: 8px;">${new Date(bookingData.end_date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</td>
+          </tr>
+          <tr>
+            <td style="padding: 8px; font-weight: bold;">Creative Delivery Date</td>
+            <td style="padding: 8px;">${bookingData.creative_delivery_date ? new Date(bookingData.creative_delivery_date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : 'N/A'}</td>
+          </tr>
+          <tr>
+            <td style="padding: 8px; font-weight: bold;">Media Type</td>
+            <td style="padding: 8px;">${bookingData.media_type}</td>
+          </tr>
+          <tr>
+            <td style="padding: 8px; font-weight: bold;">Placement Preferences</td>
+            <td style="padding: 8px;">${bookingData.placement_preferences || 'N/A'}</td>
+          </tr>
+          <tr>
+            <td style="padding: 8px; font-weight: bold;">Creative Specifications</td>
+            <td style="padding: 8px;">${bookingData.creative_specs || 'N/A'}</td>
+          </tr>
+          <tr>
+            <td style="padding: 8px; font-weight: bold;">Special Instructions</td>
+            <td style="padding: 8px;">${bookingData.special_instructions || 'N/A'}</td>
+          </tr>
+          <tr>
+            <td style="padding: 8px; font-weight: bold;">Creative File Link</td>
+            <td style="padding: 8px;">${bookingData.creative_file_link || 'N/A'}</td>
+          </tr>
+          <tr>
+            <td style="padding: 8px; font-weight: bold;">Signatory Name</td>
+            <td style="padding: 8px;">${bookingData.signatory_name || 'N/A'}</td>
+          </tr>
+          <tr>
+            <td style="padding: 8px; font-weight: bold;">Signatory Title</td>
+            <td style="padding: 8px;">${bookingData.signatory_title || 'N/A'}</td>
+          </tr>
+          <tr>
+            <td style="padding: 8px; font-weight: bold;">Signature Date</td>
+            <td style="padding: 8px;">${bookingData.signature_date ? new Date(bookingData.signature_date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : 'N/A'}</td>
+          </tr>
+        </table>
+      </div>
+
+      <!-- Financial Summary -->
+      <div style="margin: 20px 0; padding: 20px; background-color: #d4edda; border-radius: 8px;">
+        <h3 style="color: #2c3e50; margin-top: 0;">Financial Summary</h3>
+        <table style="width: 100%; border-collapse: collapse;">
+          <tr>
+            <td style="padding: 8px; font-weight: bold; width: 150px;">Gross Amount:</td>
+            <td style="padding: 8px; font-weight: bold; color: #27ae60;">$${parseFloat(bookingData.gross_amount).toLocaleString()}</td>
+          </tr>
+          <tr>
+            <td style="padding: 8px; font-weight: bold;">Partner Discount:</td>
+            <td style="padding: 8px; color: #e74c3c;">$${parseFloat(bookingData.partner_discount || 0).toLocaleString()}</td>
+          </tr>
+          <tr>
+            <td style="padding: 8px; font-weight: bold;">Additional Charges:</td>
+            <td style="padding: 8px; color: #f39c12;">$${parseFloat(bookingData.additional_charges || 0).toLocaleString()}</td>
+          </tr>
+          <tr style="background-color: #c8e6c9;">
+            <td style="padding: 8px; font-weight: bold;">Net Amount:</td>
+            <td style="padding: 8px; font-weight: bold; color: #2e7d32; font-size: 16px;">$${parseFloat(bookingData.net_amount).toLocaleString()}</td>
+          </tr>
+        </table>
+      </div>
+
+      <!-- Status Information -->
+      <div style="margin: 20px 0; padding: 20px; background-color: #e3f2fd; border-radius: 8px;">
+        <h3 style="color: #2c3e50; margin-top: 0;">Status Information</h3>
+        <table style="width: 100%; border-collapse: collapse;">
+          <tr>
+            <td style="padding: 8px; font-weight: bold; width: 150px;">Status</td>
+            <td style="padding: 8px;">
+              <span style="background-color: #007bff; color: white; padding: 6px 12px; border-radius: 6px; font-size: 12px; font-weight: bold;">
+                ${bookingData.status.toUpperCase()}
+              </span>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding: 8px; font-weight: bold;">Progress</td>
+            <td style="padding: 8px;">
+              <div style="width: 100%; background-color: #e9ecef; border-radius: 10px; height: 20px;">
+                <div style="width: ${bookingData.progress}%; background-color: #28a745; height: 100%; border-radius: 10px; display: flex; align-items: center; justify-content: center; color: white; font-size: 12px; font-weight: bold;">
+                  ${bookingData.progress}%
+                </div>
+              </div>
+            </td>
+          </tr>
+        </table>
+      </div>
     `
 
     // Email options
