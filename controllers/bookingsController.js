@@ -31,6 +31,7 @@ export const createBooking = async (req, res) => {
       signatory_name,
       signatory_title,
       signature_date,
+      pdf_url,
       authorization_required = false
     } = req.body
 
@@ -98,7 +99,8 @@ export const createBooking = async (req, res) => {
         signatory_title,
         signature_date,
         status: 'submitted',
-        progress: 0
+        progress: 50,
+        pdf_url: pdf_url,
       }])
       .select()
       .single()
