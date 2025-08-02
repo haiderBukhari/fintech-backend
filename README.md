@@ -101,6 +101,10 @@ SUPABASE_ANON_KEY=your_supabase_anon_key
 # Server Configuration
 PORT=3000
 NODE_ENV=development
+
+# Email Configuration (Gmail)
+GMAIL_USER=your_gmail@gmail.com
+GMAIL_APP_PASSWORD=your_gmail_app_password
 ```
 
 ### 3. Run the Server
@@ -125,7 +129,8 @@ npm start
 - `GET /api/bookings/:id` - Get single booking details
 - `PUT /api/bookings/:id/status` - Update booking status
 - `POST /api/bookings/:id/generate-pdf` - Generate PDF
-- `POST /api/bookings/:id/send-email` - Send email with PDF
+- `POST /api/bookings/:id/send-email` - Send email with PDF (legacy)
+- `POST /api/bookings/:id/send-booking-email` - Send booking email with PDF attachment
 
 ### Sales Rep Inbox
 - `GET /api/sales-rep-inbox` - Get all inbox items
@@ -141,14 +146,79 @@ npm start
 ### Health Check
 - `GET /health` - Server status
 
+## API Documentation
+
+### Send Booking Email
+**Endpoint:** `POST /api/bookings/:id/send-booking-email`
+
+**Description:** Send a detailed email with booking information and PDF attachment to recipients. If email_recipients are not provided, it will automatically fetch them from user settings.
+
+**Option 1: Provide email recipients directly**
+**Request Body:**
+```json
+{
+  "email_recipients": ["sales@company.com", "manager@company.com"]
+}
+```
+
+**Option 2: Use email recipients from settings**
+**Request Body:**
+```json
+{
+  "user_id": "user-uuid"
+}
+```
+**OR**
+**Query Parameter:** `?user_id=user-uuid`
+
+**Response:**
+```json
+{
+  "success": true,
+  "message": "Email sent successfully",
+  "data": {
+    "booking_id": "uuid",
+    "recipients": ["sales@company.com", "manager@company.com"],
+    "message_id": "email_message_id"
+  }
+}
+```
+
+**Error Responses:**
+- `400` - Invalid email format or missing recipients
+- `400` - user_id required when email_recipients not provided
+- `400` - No email recipients found in settings for this user
+- `404` - Booking not found
+- `400` - PDF URL not found (generate PDF first)
+- `500` - Email sending failed
+
 ## Features
 
 - ✅ Complete booking management system
 - ✅ Sales rep inbox workflow
 - ✅ Booking status tracking
 - ✅ PDF generation and email sending
+- ✅ Email notifications with PDF attachments
 - ✅ Comprehensive reporting
 - ✅ User settings management
 - ✅ Secure authentication
 - ✅ Database relationships
-- ✅ Error handling and validation 
+- ✅ Error handling and validation
+- ✅ Role-based access control
+
+## Email Configuration
+
+### Gmail Setup
+1. Enable 2-Factor Authentication on your Gmail account
+2. Generate an App Password:
+   - Go to Google Account settings
+   - Security → 2-Step Verification → App passwords
+   - Generate password for "Mail"
+3. Use the generated password as `GMAIL_APP_PASSWORD` in your `.env` file
+
+### Email Features
+- **Booking Creation**: Sends detailed email with PDF attachment when booking is created
+- **Status Updates**: Sends notification emails when booking status changes
+- **HTML Templates**: Professional email templates with booking details
+- **PDF Attachments**: Automatically attaches PDF files to emails
+- **Multiple Recipients**: Support for multiple email recipients 

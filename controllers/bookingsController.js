@@ -1,4 +1,5 @@
 import { supabase } from '../config/supabaseConfig.js'
+import { sendBookingEmail as sendEmailService } from '../services/emailService.js'
 
 // Create new booking
 export const createBooking = async (req, res) => {
@@ -32,7 +33,8 @@ export const createBooking = async (req, res) => {
       signatory_title,
       signature_date,
       pdf_url,
-      authorization_required = false
+      authorization_required = false,
+      email_recipients = [] // New field for email recipients
     } = req.body
 
     // Get user_id from query parameter
@@ -394,7 +396,131 @@ export const generatePDF = async (req, res) => {
   }
 }
 
-// Send email
+// Send email with booking details
+export const sendBookingEmail = async (req, res) => {
+  try {
+    const { id } = req.params
+    const { email_recipients, user_id } = req.body
+
+    let finalEmailRecipients = []
+
+    // If email_recipients provided in body, use them
+    if (email_recipients && Array.isArray(email_recipients) && email_recipients.length > 0) {
+      finalEmailRecipients = email_recipients
+    } else {
+      // Get user_id from query parameter if not in body
+      const userId = user_id || req.query.user_id
+      
+      if (!userId) {
+        return res.status(400).json({
+          success: false,
+          message: 'user_id is required when email_recipients are not provided'
+        })
+      }
+
+      // Get email recipients from settings table
+      const { data: settings, error: settingsError } = await supabase
+        .from('settings')
+        .select('email_recipients')
+        .eq('user_id', userId)
+        .single()
+
+      if (settingsError || !settings || !settings.email_recipients || settings.email_recipients.length === 0) {
+        return res.status(400).json({
+          success: false,
+          message: 'No email recipients found in settings for this user'
+        })
+      }
+
+      finalEmailRecipients = settings.email_recipients
+    }
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    for (const email of finalEmailRecipients) {
+      if (!emailRegex.test(email)) {
+        return res.status(400).json({
+          success: false,
+          message: `Invalid email format: ${email}`
+        })
+      }
+    }
+
+    // Get booking details
+    const { data: booking, error: bookingError } = await supabase
+      .from('bookings')
+      .select('*')
+      .eq('id', id)
+      .single()
+
+    if (bookingError || !booking) {
+      return res.status(404).json({
+        success: false,
+        message: 'Booking not found'
+      })
+    }
+
+    // Check if PDF URL exists
+    if (!booking.pdf_url) {
+      return res.status(400).json({
+        success: false,
+        message: 'PDF URL not found for this booking. Please generate PDF first.'
+      })
+    }
+
+    // Send email with booking details and PDF attachment
+    try {
+      const emailResult = await sendEmailService(booking, finalEmailRecipients, booking.pdf_url)
+      
+      // Update booking status to sent
+      await supabase
+        .from('bookings')
+        .update({ 
+          status: 'sent', 
+          progress: 50,
+          updated_at: new Date().toISOString() 
+        })
+        .eq('id', id)
+
+      // Add to status history
+      await supabase
+        .from('booking_status_history')
+        .insert([{
+          booking_id: id,
+          status: 'sent',
+          notes: `Email sent to ${finalEmailRecipients.join(', ')}`
+        }])
+
+      res.status(200).json({
+        success: true,
+        message: 'Email sent successfully',
+        data: {
+          booking_id: id,
+          recipients: finalEmailRecipients,
+          message_id: emailResult.messageId
+        }
+      })
+
+    } catch (emailError) {
+      console.error('Email sending failed:', emailError.message)
+      res.status(500).json({
+        success: false,
+        message: 'Failed to send email',
+        error: emailError.message
+      })
+    }
+
+  } catch (error) {
+    console.error('Send booking email error:', error)
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error',
+      error: error.message
+    })
+  }
+}
+
+// Send email (legacy function - kept for backward compatibility)
 export const sendEmail = async (req, res) => {
   try {
     const { id } = req.params
