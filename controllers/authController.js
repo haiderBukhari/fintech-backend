@@ -43,7 +43,7 @@ export const signup = async (req, res) => {
           company_name: company_name || null
         }
       ])
-      .select('id, full_name, email_address, company_name, created_at')
+      .select('id, full_name, email_address, company_name, created_at, role')
       .single()
 
     if (insertError) {
@@ -93,7 +93,7 @@ export const login = async (req, res) => {
     // Find user by email
     const { data: user, error: fetchError } = await supabase
       .from('users')
-      .select('id, full_name, email_address, password, company_name, created_at')
+      .select('id, full_name, email_address, password, company_name, created_at, role')
       .eq('email_address', email_address)
       .single()
 
