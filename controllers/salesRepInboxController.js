@@ -30,6 +30,7 @@ export const getSalesRepInbox = async (req, res) => {
 
     // Transform data to match expected format
     const transformedData = inboxItems.map(item => ({
+      rep_status_id: item.id,
       booking_id: item.booking_id,
       campaign_name: item.bookings.campaign_name,
       priority: item.priority,
